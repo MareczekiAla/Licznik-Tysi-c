@@ -95,6 +95,165 @@
   </style>
 </head>
 <body>
-<!-- ...reszta kodu HTML bez zmian... -->
+  <div class="container">
+    <div id="startScreen">
+      <h2>Ustawienia gry</h2>
+      <label for="numPlayers">Liczba graczy:</label>
+      <select id="numPlayers">
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+      </select>
+      <div id="playerNames"></div>
+      <button onclick="startGame()">Rozpocznij grę</button>
+    </div>
+
+    <div id="gameScreen" style="display:none;">
+      <h2>Gra w Tysiąca</h2>
+      <div class="score-board" id="scoreBoard"></div>
+      <h3>Nowa runda</h3>
+      <label for="bidTarget">Wpisz liczbę punktów dla gracza z najwyższą licytacją:</label>
+      <input type="number" id="bidTarget" placeholder="np. 120">
+      <label for="bidPlayer">Wybierz gracza z najwyższą licytacją:</label>
+      <select id="bidPlayer"></select>
+      <div id="roundInputs"></div>
+      <button onclick="addRound()">Dodaj rundę</button>
+      <button onclick="undoRound()">Cofnij ostatnią rundę</button>
+      <button onclick="resetGame()">Nowa gra</button>
+
+      <div class="history">
+        <h3>Historia rund</h3>
+        <table>
+          <thead>
+            <tr id="historyHeader"></tr>
+          </thead>
+          <tbody id="historyList"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let players = [];
+    let history = [];
+
+    document.getElementById('numPlayers').addEventListener('change', function () {
+      const container = document.getElementById('playerNames');
+      container.innerHTML = '';
+      for (let i = 0; i < parseInt(this.value); i++) {
+        const label = document.createElement('label');
+        label.textContent = `Gracz ${i + 1}`;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.id = 'playerName' + i;
+        input.placeholder = 'Imię gracza';
+        container.appendChild(label);
+        container.appendChild(input);
+      }
+    });
+    document.getElementById('numPlayers').dispatchEvent(new Event('change'));
+
+    function startGame() {
+      const numPlayers = parseInt(document.getElementById('numPlayers').value);
+      players = [];
+      const bidPlayerSelect = document.getElementById('bidPlayer');
+      bidPlayerSelect.innerHTML = '';
+      for (let i = 0; i < numPlayers; i++) {
+        let name = document.getElementById('playerName' + i).value.trim();
+        if (!name) name = `Gracz ${i + 1}`;
+        players.push({ name, score: 0 });
+        const option = document.createElement('option');
+        option.value = i;
+        option.textContent = name;
+        bidPlayerSelect.appendChild(option);
+      }
+      document.getElementById('startScreen').style.display = 'none';
+      document.getElementById('gameScreen').style.display = 'block';
+      updateUI();
+      renderHistoryHeader();
+    }
+
+    function updateUI() {
+      const scoreBoard = document.getElementById('scoreBoard');
+      const roundInputs = document.getElementById('roundInputs');
+      scoreBoard.innerHTML = '';
+      roundInputs.innerHTML = '';
+      players.forEach((player, index) => {
+        scoreBoard.innerHTML += `<div class='player-row'><strong>${player.name}</strong><span>${player.score} pkt</span></div>`;
+        roundInputs.innerHTML += `<div class='player-row'>${player.name}: <input type='number' id='roundScore${index}' value='0'></div>`;
+      });
+    }
+
+    function addRound() {
+      const round = [];
+      const bidTarget = parseInt(document.getElementById('bidTarget').value);
+      const bidPlayerIndex = parseInt(document.getElementById('bidPlayer').value);
+      if (isNaN(bidTarget) || isNaN(bidPlayerIndex)) {
+        alert('Wprowadź liczbę punktów i wybierz licytującego gracza.');
+        return;
+      }
+
+      for (let i = 0; i < players.length; i++) {
+        const val = parseInt(document.getElementById('roundScore' + i).value);
+        if (isNaN(val)) return alert('Wprowadź wszystkie punkty.');
+        round.push(val);
+      }
+
+      if (round[bidPlayerIndex] < bidTarget) {
+        alert(`${players[bidPlayerIndex].name} NIE zrealizował licytacji! Otrzymuje ujemne punkty.`);
+        round[bidPlayerIndex] = -bidTarget;
+      }
+
+      for (let i = 0; i < players.length; i++) {
+        players[i].score += round[i];
+      }
+
+      history.push({ scores: round, bidTarget: bidTarget, bidPlayerIndex });
+      updateUI();
+      updateHistory();
+      checkWin();
+    }
+
+    function undoRound() {
+      if (history.length === 0) return;
+      const last = history.pop();
+      for (let i = 0; i < players.length; i++) {
+        players[i].score -= last.scores[i];
+      }
+      updateUI();
+      updateHistory();
+    }
+
+    function resetGame() {
+      if (confirm("Czy na pewno chcesz rozpocząć nową grę?")) {
+        location.reload();
+      }
+    }
+
+    function renderHistoryHeader() {
+      const headerRow = document.getElementById('historyHeader');
+      headerRow.innerHTML = '<th>Runda</th><th>Licytacja</th>' + players.map(p => `<th>${p.name}</th>`).join('');
+    }
+
+    function updateHistory() {
+      const list = document.getElementById('historyList');
+      list.innerHTML = '';
+      history.forEach((round, index) => {
+        const bidder = players[round.bidPlayerIndex]?.name || '-';
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${index + 1}</td><td>${round.bidTarget} (${bidder})</td>` +
+          round.scores.map((val) => `<td>${val}</td>`).join('');
+        list.appendChild(row);
+      });
+    }
+
+    function checkWin() {
+      players.forEach(player => {
+        if (player.score >= 1000) {
+          alert(`${player.name} wygrywa z wynikiem ${player.score} punktów!`);
+        }
+      });
+    }
+  </script>
 </body>
 </html>
