@@ -264,20 +264,16 @@
       players.forEach((p, i) => p.score += roundScores[i]);
       history.push({ scores: [...roundScores], bid: currentBid, bidder: currentBidderIndex });
       updateHistory();
+      renderPlayers();
 
-      const summary = players.map(p => `${p.name}: ${p.score} pkt`).join('
-');
-      if (confirm(`Podsumowanie:
-${summary}
-
-Rozpocząć kolejną licytację?`)) {
+      const btn = document.createElement('button');
+      btn.textContent = 'Rozpocznij kolejną licytację';
+      btn.style.marginTop = '12px';
+      btn.onclick = () => {
         document.getElementById('gameScreen').style.display = 'none';
         document.getElementById('auctionScreen').style.display = 'block';
-      }
-    }
-      document.getElementById('auctionScreen').style.display = 'block';
-      renderPlayers();
-      updateHistory();
+      };
+      document.getElementById('roundInputs').appendChild(btn);
     }
 
     function renderHistoryHeader() {
