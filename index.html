@@ -263,7 +263,18 @@
       }
       players.forEach((p, i) => p.score += roundScores[i]);
       history.push({ scores: [...roundScores], bid: currentBid, bidder: currentBidderIndex });
-      document.getElementById('gameScreen').style.display = 'none';
+      updateHistory();
+
+      const summary = players.map(p => `${p.name}: ${p.score} pkt`).join('
+');
+      if (confirm(`Podsumowanie:
+${summary}
+
+Rozpocząć kolejną licytację?`)) {
+        document.getElementById('gameScreen').style.display = 'none';
+        document.getElementById('auctionScreen').style.display = 'block';
+      }
+    }
       document.getElementById('auctionScreen').style.display = 'block';
       renderPlayers();
       updateHistory();
