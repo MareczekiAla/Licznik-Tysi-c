@@ -9,6 +9,15 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js');
     }
+  function undoLastRound() {
+      if (history.length === 0) return;
+      const lastRound = history.pop();
+      lastRound.scores.forEach((score, i) => {
+        players[i].score -= score;
+      });
+      updateHistory();
+      renderPlayers();
+    }
   </script>
   <style>
     body {
@@ -188,6 +197,13 @@
       bidSelect.innerHTML = '';
       scoreSelect.innerHTML = '';
 
+      const defaultOption = document.createElement('option');
+      defaultOption.value = '';
+      defaultOption.textContent = '-- wybierz gracza --';
+      defaultOption.disabled = true;
+      defaultOption.selected = true;
+      bidSelect.appendChild(defaultOption);
+
       for (let i = 0; i < n; i++) {
         let name = document.getElementById(`playerName${i}`).value.trim();
         if (!name) name = `Gracz ${i + 1}`;
@@ -210,6 +226,11 @@
     }
 
     function startGame() {
+      const bidPlayer = document.getElementById('bidPlayerSelect').value;
+      if (bidPlayer === '') {
+        alert('Proszę wybrać gracza, który wygrał licytację.');
+        return;
+      }
       currentBid = parseInt(document.getElementById('bidValue').value);
       currentBidderIndex = parseInt(document.getElementById('bidPlayerSelect').value);
       renderPlayers();
@@ -257,6 +278,10 @@
     }
 
     function addRound() {
+      if (roundScores.every(score => score === 0)) {
+        alert("Przynajmniej jeden gracz musi mieć więcej niż 0 punktów, aby zapisać rundę.");
+        return;
+      }
       if (roundScores[currentBidderIndex] < currentBid) {
         alert(`${players[currentBidderIndex].name} NIE zrealizował licytacji! Traci ${currentBid} pkt.`);
         roundScores[currentBidderIndex] = -currentBid;
@@ -274,6 +299,12 @@
         document.getElementById('auctionScreen').style.display = 'block';
       };
       document.getElementById('roundInputs').appendChild(btn);
+
+      const undoBtn = document.createElement('button');
+      undoBtn.textContent = 'Cofnij ostatnią rundę';
+      undoBtn.style.marginTop = '12px';
+      undoBtn.onclick = undoLastRound;
+      document.getElementById('roundInputs').appendChild(undoBtn);
     }
 
     function renderHistoryHeader() {
@@ -284,6 +315,12 @@
     function updateHistory() {
       const list = document.getElementById('historyList');
       list.innerHTML = '';
+      if (history.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td colspan="${2 + players.length}">Brak rund</td>`;
+        list.appendChild(row);
+        return;
+      }
       history.forEach((round, i) => {
         const r = document.createElement('tr');
         r.innerHTML = `<td>${i + 1}</td><td>${round.bid} (${players[round.bidder].name})</td>` +
