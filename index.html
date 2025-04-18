@@ -295,8 +295,7 @@
       btn.textContent = 'Rozpocznij kolejną licytację';
       btn.style.marginTop = '12px';
       btn.onclick = () => {
-        document.getElementById('gameScreen').style.display = 'none';
-        document.getElementById('auctionScreen').style.display = 'block';
+        prepareAuction();
       };
       document.getElementById('roundInputs').appendChild(btn);
 
