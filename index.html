@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Licznik punktów - Tysiąc</title>
+  <link rel="manifest" href="manifest.json">
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -41,6 +42,20 @@
       color: white;
       font-weight: bold;
       cursor: pointer;
+    }
+    .undo-btn {
+      background: linear-gradient(to right, #ff5e62, #ff9966);
+      color: white;
+      font-weight: bold;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 10px;
+    }
+    .undo-section {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      align-items: center;
     }
     .player-row, .score-board {
       display: flex;
@@ -86,262 +101,60 @@
       max-height: 90vh;
       overflow-y: auto;
     }
-    .points-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-    }
-    .undo-btn {
-      background: linear-gradient(to right, #ff5e62, #ff9966);
-      color: white;
-      font-weight: bold;
-      padding: 10px 15px;
-      border: none;
-      border-radius: 10px;
-    }
-    .undo-section {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 15px;
-      align-items: center;
-    }
   </style>
 </head>
 <body>
-<div class="container">
-  <div class="undo-section">
-    <select id="undoSelect"></select>
-    <button class="undo-btn" onclick="confirmUndo()">⏪ Cofnij do wybranej rundy</button>
-  </div>
-
-  <div id="startScreen">
-    <h2>Ustawienia gry</h2>
-    <label for="numPlayers">Liczba graczy:</label>
-    <select id="numPlayers">
-      <option value="2">2</option>
-      <option value="3">3</option>
-      <option value="4">4</option>
-    </select>
-    <div id="playerNames"></div>
-    <button onclick="prepareAuction()">Rozpocznij grę</button>
-  </div>
-
-  <div id="auctionScreen" style="display:none;">
-    <h2>Licytacja</h2>
-    <label for="bidValue">Wybierz stawkę:</label>
-    <select id="bidValue"></select>
-    <label for="bidPlayerSelect">Wybierz licytującego:</label>
-    <select id="bidPlayerSelect"></select>
-    <button onclick="startGame()">Potwierdź licytację</button>
-  </div>
-
-  <div id="gameScreen" style="display:none;">
-    <h2>Gra w Tysiąca</h2>
-    <div class="score-board" id="scoreBoard"></div>
-    <h3>Wyniki rundy</h3>
-    <div id="roundInputs"></div>
-    <button onclick="addRound()">Zapisz rundę</button>
-
-    <div class="history">
-      <h3>Historia rund (kliknij, aby edytować)</h3>
-      <table>
-        <thead><tr id="historyHeader"></tr></thead>
-        <tbody id="historyList"></tbody>
-      </table>
+  <div class="container">
+    <div class="undo-section">
+      <select id="undoSelect"></select>
+      <button class="undo-btn" onclick="confirmUndo()">⏪ Cofnij do wybranej rundy</button>
+    </div>
+    <div id="startScreen">
+      <h2>Ustawienia gry</h2>
+      <label for="numPlayers">Liczba graczy:</label>
+      <select id="numPlayers">
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+      </select>
+      <div id="playerNames"></div>
+      <button onclick="prepareAuction()">Rozpocznij grę</button>
+    </div>
+    <div id="auctionScreen" style="display:none;">
+      <h2>Licytacja</h2>
+      <label for="bidValue">Wybierz stawkę:</label>
+      <select id="bidValue"></select>
+      <label for="bidPlayerSelect">Wybierz licytującego:</label>
+      <select id="bidPlayerSelect"></select>
+      <button onclick="startGame()">Potwierdź licytację</button>
+    </div>
+    <div id="gameScreen" style="display:none;">
+      <h2>Gra w Tysiąca</h2>
+      <div class="score-board" id="scoreBoard"></div>
+      <h3>Wyniki rundy</h3>
+      <div id="roundInputs"></div>
+      <button onclick="addRound()">Zapisz rundę</button>
+      <div class="history">
+        <h3>Historia rund</h3>
+        <table>
+          <thead><tr id="historyHeader"></tr></thead>
+          <tbody id="historyList"></tbody>
+        </table>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Modal do edycji punktów/licytacji -->
-<div id="editModal" class="overlay" style="display:none;">
-  <div class="modal">
-    <h4 id="editTitle">Edycja</h4>
-    <div id="editContent"></div>
-    <button onclick="saveEdit()">Zapisz</button>
+  <!-- Modal do edycji -->
+  <div id="editModal" class="overlay" style="display:none;">
+    <div class="modal">
+      <h4 id="editTitle">Edycja</h4>
+      <div id="editContent"></div>
+      <button onclick="saveEdit()">Zapisz</button>
+    </div>
   </div>
-</div>
 
-<script>
-  let players = [], history = [], currentBid = 0, currentBidderIndex = null;
-  let roundScores = [], editIndex = null, editType = null, editData = {};
-
-  document.getElementById('numPlayers').addEventListener('change', () => {
-    const container = document.getElementById('playerNames');
-    container.innerHTML = '';
-    const n = parseInt(document.getElementById('numPlayers').value);
-    for (let i = 0; i < n; i++) {
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.placeholder = `Gracz ${i + 1}`;
-      input.id = `playerName${i}`;
-      container.appendChild(input);
-    }
-  });
-  document.getElementById('numPlayers').dispatchEvent(new Event('change'));
-
-  function prepareAuction() {
-    players = [];
-    const n = parseInt(document.getElementById('numPlayers').value);
-    const bidSelect = document.getElementById('bidPlayerSelect');
-    const scoreSelect = document.getElementById('bidValue');
-    bidSelect.innerHTML = '';
-    scoreSelect.innerHTML = '';
-
-    const defaultOption = document.createElement('option');
-    defaultOption.value = '';
-    defaultOption.textContent = '-- wybierz gracza --';
-    defaultOption.disabled = true;
-    defaultOption.selected = true;
-    bidSelect.appendChild(defaultOption);
-
-    for (let i = 0; i < n; i++) {
-      let name = document.getElementById(`playerName${i}`).value.trim();
-      if (!name) name = `Gracz ${i + 1}`;
-      players.push({ name, score: 0 });
-      const option = document.createElement('option');
-      option.value = i;
-      option.textContent = name;
-      bidSelect.appendChild(option);
-    }
-
-    for (let i = 100; i <= 230; i += 10) {
-      const option = document.createElement('option');
-      option.value = i;
-      option.textContent = i;
-      scoreSelect.appendChild(option);
-    }
-
-    document.getElementById('startScreen').style.display = 'none';
-    document.getElementById('auctionScreen').style.display = 'block';
-  }
-
-  function startGame() {
-    const bidPlayer = document.getElementById('bidPlayerSelect').value;
-    if (bidPlayer === '') return alert('Proszę wybrać gracza.');
-    currentBid = parseInt(document.getElementById('bidValue').value);
-    currentBidderIndex = parseInt(bidPlayer);
-    renderPlayers();
-    renderHistoryHeader();
-    document.getElementById('auctionScreen').style.display = 'none';
-    document.getElementById('gameScreen').style.display = 'block';
-  }
-
-  function renderPlayers() {
-    const board = document.getElementById('scoreBoard');
-    const inputs = document.getElementById('roundInputs');
-    board.innerHTML = '';
-    inputs.innerHTML = '';
-    roundScores = new Array(players.length).fill(0);
-    players.forEach((p, i) => {
-      board.innerHTML += `<div class="player-row"><strong>${p.name}</strong>: ${p.score} pkt</div>`;
-      const btn = document.createElement('button');
-      btn.className = 'player-btn';
-      btn.textContent = `${p.name}: 0 pkt`;
-      btn.onclick = () => {
-        const val = prompt(`Punkty dla ${p.name}:`, "0");
-        if (val !== null) {
-          roundScores[i] = parseInt(val) || 0;
-          btn.textContent = `${p.name}: ${roundScores[i]} pkt`;
-        }
-      };
-      inputs.appendChild(btn);
-    });
-  }
-
-  function addRound() {
-    if (roundScores.every(s => s === 0)) return alert("Brak punktów.");
-    if (roundScores[currentBidderIndex] < currentBid) {
-      alert(`${players[currentBidderIndex].name} nie zrealizował licytacji. Traci ${currentBid} pkt.`);
-      roundScores[currentBidderIndex] = -currentBid;
-    }
-    players.forEach((p, i) => p.score += roundScores[i]);
-    history.push({ scores: [...roundScores], bid: currentBid, bidder: currentBidderIndex });
-    updateHistory();
-    renderPlayers();
-    updateUndoSelect();
-  }
-
-  function renderHistoryHeader() {
-    const row = document.getElementById('historyHeader');
-    row.innerHTML = '<th>Runda</th><th>Licytacja</th>' + players.map(p => `<th>${p.name}</th>`).join('');
-  }
-
-  function updateHistory() {
-    const list = document.getElementById('historyList');
-    list.innerHTML = '';
-    history.forEach((round, i) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${i + 1}</td>
-        <td onclick="edit('bid', ${i})">${round.bid} (${players[round.bidder].name})</td>` +
-        round.scores.map((s, j) => `<td onclick="edit('score', ${i}, ${j})">${s}</td>`).join('');
-      list.appendChild(tr);
-    });
-  }
-
-  function updateUndoSelect() {
-    const select = document.getElementById('undoSelect');
-    select.innerHTML = '';
-    for (let i = history.length; i >= 1; i--) {
-      const opt = document.createElement('option');
-      opt.value = i;
-      opt.textContent = `Cofnij do rundy ${i}`;
-      select.appendChild(opt);
-    }
-  }
-
-  function confirmUndo() {
-    const idx = parseInt(document.getElementById('undoSelect').value);
-    if (isNaN(idx)) return;
-    history.splice(idx);
-    players.forEach(p => p.score = 0);
-    history.forEach(r => r.scores.forEach((s, i) => players[i].score += s));
-    updateHistory();
-    renderPlayers();
-    updateUndoSelect();
-  }
-
-  function edit(type, i, j = null) {
-    editType = type;
-    editIndex = i;
-    editData = j;
-    const modal = document.getElementById('editModal');
-    const content = document.getElementById('editContent');
-    const title = document.getElementById('editTitle');
-    if (type === 'score') {
-      title.textContent = `Edytuj punkt gracza ${players[j].name} w rundzie ${i + 1}`;
-      content.innerHTML = `<input type="number" id="editInput" value="${history[i].scores[j]}">`;
-    } else {
-      title.textContent = `Edytuj licytację w rundzie ${i + 1}`;
-      content.innerHTML = `
-        <label>Stawka: <input type="number" id="editBidValue" value="${history[i].bid}"></label>
-        <label>Gracz:
-          <select id="editBidder">
-            ${players.map((p, idx) => `<option value="${idx}" ${idx === history[i].bidder ? 'selected' : ''}>${p.name}</option>`).join('')}
-          </select>
-        </label>`;
-    }
-    modal.style.display = 'flex';
-  }
-
-  function saveEdit() {
-    if (editType === 'score') {
-      const val = parseInt(document.getElementById('editInput').value);
-      if (!isNaN(val)) history[editIndex].scores[editData] = val;
-    } else {
-      const newBid = parseInt(document.getElementById('editBidValue').value);
-      const newBidder = parseInt(document.getElementById('editBidder').value);
-      if (!isNaN(newBid)) {
-        history[editIndex].bid = newBid;
-        history[editIndex].bidder = newBidder;
-      }
-    }
-    players.forEach(p => p.score = 0);
-    history.forEach(r => r.scores.forEach((s, i) => players[i].score += s));
-    updateHistory();
-    renderPlayers();
-    updateUndoSelect();
-    document.getElementById('editModal').style.display = 'none';
-  }
-</script>
+  <script>
+    // cały skrypt JavaScript będzie uzupełniony tutaj w następnej części
+  </script>
 </body>
 </html>
