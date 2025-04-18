@@ -18,7 +18,34 @@
       updateHistory();
       renderPlayers();
     }
-  </script>
+  function editRound(index) {
+  const round = history[index];
+  const newBid = prompt("Nowa wartość licytacji:", round.bid);
+  if (newBid === null || isNaN(newBid)) return;
+  const newBidderName = prompt("Nowy licytujący (wpisz dokładnie imię):", players[round.bidder].name);
+  const newBidderIndex = players.findIndex(p => p.name === newBidderName);
+  if (newBidderIndex === -1) return;
+  const newScores = [];
+  for (let i = 0; i < players.length; i++) {
+    const score = prompt(`Nowy wynik dla ${players[i].name}:`, round.scores[i]);
+    if (score === null || isNaN(score)) return;
+    newScores.push(parseInt(score));
+  }
+
+  // aktualizacja historii i wyników
+  players.forEach((p, i) => p.score -= history[index].scores[i]);
+  players.forEach((p, i) => p.score += newScores[i]);
+
+  history[index] = {
+    scores: newScores,
+    bid: parseInt(newBid),
+    bidder: newBidderIndex
+  };
+
+  updateHistory();
+  renderPlayers();
+}
+</script>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -223,6 +250,9 @@
 
       document.getElementById('startScreen').style.display = 'none';
       document.getElementById('auctionScreen').style.display = 'block';
+
+      document.getElementById('bidPlayerSelect').value = ''; // reset wyboru licytującego
+    }
     }
 
     function startGame() {
@@ -322,6 +352,8 @@
       }
       history.forEach((round, i) => {
         const r = document.createElement('tr');
+        r.style.cursor = 'pointer';
+        r.onclick = () => editRound(i);
         r.innerHTML = `<td>${i + 1}</td><td>${round.bid} (${players[round.bidder].name})</td>` +
           round.scores.map(s => `<td>${s}</td>`).join('');
         list.appendChild(r);
