@@ -1,24 +1,10 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Licznik punktów - Tysiąc</title>
   <link rel="manifest" href="manifest.json">
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js');
-    }
-  function undoLastRound() {
-      if (history.length === 0) return;
-      const lastRound = history.pop();
-      lastRound.scores.forEach((score, i) => {
-        players[i].score -= score;
-      });
-      updateHistory();
-      renderPlayers();
-    }
-  </script>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -56,6 +42,16 @@
       color: white;
       font-weight: bold;
       cursor: pointer;
+    }
+    .undo-btn {
+      background: linear-gradient(to right, #ff5e62, #ff9966);
+      color: white;
+      font-weight: bold;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      float: right;
     }
     .player-row, .score-board {
       display: flex;
@@ -122,6 +118,8 @@
 </head>
 <body>
   <div class="container">
+    <button class="undo-btn" onclick="undoLastRound()">⏪ Cofnij ostatnią rundę</button>
+
     <div id="startScreen">
       <h2>Ustawienia gry</h2>
       <label for="numPlayers">Liczba graczy:</label>
@@ -168,6 +166,10 @@
   </div>
 
   <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js');
+    }
+
     let players = [];
     let history = [];
     let currentBid = 0;
@@ -299,12 +301,26 @@
         document.getElementById('auctionScreen').style.display = 'block';
       };
       document.getElementById('roundInputs').appendChild(btn);
+    }
 
-      const undoBtn = document.createElement('button');
-      undoBtn.textContent = 'Cofnij ostatnią rundę';
-      undoBtn.style.marginTop = '12px';
-      undoBtn.onclick = undoLastRound;
-      document.getElementById('roundInputs').appendChild(undoBtn);
+    function undoLastRound() {
+      if (history.length === 0) {
+        alert("Nie ma żadnych rund do cofnięcia.");
+        return;
+      }
+      const lastRound = history.pop();
+      lastRound.scores.forEach((score, i) => {
+        players[i].score -= score;
+      });
+
+      document.getElementById('startScreen').style.display = 'none';
+      document.getElementById('auctionScreen').style.display = 'none';
+      document.getElementById('gameScreen').style.display = 'block';
+
+      updateHistory();
+      renderPlayers();
+
+      alert("Ostatnia runda została cofnięta.");
     }
 
     function renderHistoryHeader() {
