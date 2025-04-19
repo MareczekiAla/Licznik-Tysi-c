@@ -63,6 +63,12 @@
       document.getElementById('auctionScreen').style.display = 'none';
       document.getElementById('gameScreen').style.display = 'block';
 
+      roundScores = new Array(players.length).fill(0);
+      renderPlayers();
+      renderHistoryHeader();
+    }
+
+    function renderPlayers() {
       const scoreBoard = document.getElementById('scoreBoard');
       const roundInputs = document.getElementById('roundInputs');
       scoreBoard.innerHTML = '';
@@ -73,10 +79,74 @@
         const btn = document.createElement('button');
         btn.className = 'player-btn';
         btn.textContent = `${player.name}: 0 pkt`;
-        btn.onclick = () => alert(`Tu wpiszesz wynik dla ${player.name}`);
+        btn.onclick = () => showPointModal(index, btn);
         roundInputs.appendChild(btn);
       });
     }
+
+    function showPointModal(index, btn) {
+      selectedBtn = btn;
+      const modal = document.getElementById('pointModal');
+      const grid = document.getElementById('pointsGrid');
+      const nameDisplay = document.getElementById('modalPlayerName');
+      nameDisplay.textContent = `Wynik: ${players[index].name}`;
+      grid.innerHTML = '';
+
+      for (let i = 0; i <= 400; i += 10) {
+        const ptBtn = document.createElement('button');
+        ptBtn.textContent = i;
+        ptBtn.onclick = () => {
+          roundScores[index] = i;
+          btn.textContent = `${players[index].name}: ${i} pkt`;
+          modal.style.display = 'none';
+        };
+        grid.appendChild(ptBtn);
+      }
+
+      modal.style.display = 'flex';
+    }
+
+    function renderHistoryHeader() {
+      const row = document.getElementById('historyHeader');
+      row.innerHTML = '<th>Runda</th><th>Licytacja</th>' + players.map(p => `<th>${p.name}</th>`).join('');
+    }
+
+    function updateHistory() {
+      const list = document.getElementById('historyList');
+      list.innerHTML = '';
+      history.forEach((round, i) => {
+        const r = document.createElement('tr');
+        r.innerHTML = `<td>${i + 1}</td><td>${round.bid} (${players[round.bidder].name})</td>` +
+          round.scores.map(s => `<td>${s}</td>`).join('');
+        list.appendChild(r);
+      });
+    }
+
+    function checkForWinner() {
+      players.forEach(p => {
+        if (p.score >= 1000) {
+          const confetti = document.createElement('div');
+          confetti.innerHTML = `🎉 ${p.name} wygrał grę z wynikiem ${p.score} punktów! 🎉`;
+          confetti.style.position = 'fixed';
+          confetti.style.top = '50%';
+          confetti.style.left = '50%';
+          confetti.style.transform = 'translate(-50%, -50%)';
+          confetti.style.fontSize = '2rem';
+          confetti.style.background = '#fff';
+          confetti.style.padding = '20px';
+          confetti.style.borderRadius = '12px';
+          confetti.style.boxShadow = '0 0 10px rgba(0,0,0,0.3)';
+          confetti.style.zIndex = '2000';
+          document.body.appendChild(confetti);
+
+          setTimeout(() => confetti.remove(), 5000);
+        }
+      });
+    }
+
+    let roundScores = [];
+    let selectedBtn = null;
+    let history = [];
 
     function addRound() {
       console.log("Zapisano rundę – funkcja w budowie");
