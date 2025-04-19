@@ -5,49 +5,51 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Licznik punktów - Tysiąc</title>
   <link rel="manifest" href="manifest.json">
-  <script>
+  <script defer>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js');
     }
-  function undoLastRound() {
-      if (history.length === 0) return;
-      const lastRound = history.pop();
-      lastRound.scores.forEach((score, i) => {
-        players[i].score -= score;
-      });
-      updateHistory();
-      renderPlayers();
 
-      checkForWinner();
+    let players = [];
+
+    function prepareAuction() {
+      const n = parseInt(document.getElementById('numPlayers').value);
+      const namesContainer = document.getElementById('playerNames');
+      namesContainer.innerHTML = '';
+      players = [];
+
+      for (let i = 0; i < n; i++) {
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.placeholder = `Gracz ${i + 1}`;
+        nameInput.id = `playerName${i}`;
+        namesContainer.appendChild(nameInput);
+      }
+
+      const bidSelect = document.getElementById('bidPlayerSelect');
+      bidSelect.innerHTML = '<option disabled selected value>-- wybierz gracza --</option>';
+      for (let i = 0; i < n; i++) {
+        const name = document.getElementById(`playerName${i}`)?.value || `Gracz ${i + 1}`;
+        const option = document.createElement('option');
+        option.value = i;
+        option.text = name;
+        bidSelect.appendChild(option);
+        players.push({ name: name, score: 0 });
+      }
+
+      const bidValue = document.getElementById('bidValue');
+      bidValue.innerHTML = '';
+      for (let i = 100; i <= 230; i += 10) {
+        const option = document.createElement('option');
+        option.value = i;
+        option.text = i;
+        bidValue.appendChild(option);
+      }
+
+      document.getElementById('startScreen').style.display = 'none';
+      document.getElementById('auctionScreen').style.display = 'block';
     }
-  function editRound(index) {
-  const round = history[index];
-  const newBid = prompt("Nowa wartość licytacji:", round.bid);
-  if (newBid === null || isNaN(newBid)) return;
-  const newBidderName = prompt("Nowy licytujący (wpisz dokładnie imię):", players[round.bidder].name);
-  const newBidderIndex = players.findIndex(p => p.name === newBidderName);
-  if (newBidderIndex === -1) return;
-  const newScores = [];
-  for (let i = 0; i < players.length; i++) {
-    const score = prompt(`Nowy wynik dla ${players[i].name}:`, round.scores[i]);
-    if (score === null || isNaN(score)) return;
-    newScores.push(parseInt(score));
-  }
-
-  // aktualizacja historii i wyników
-  players.forEach((p, i) => p.score -= history[index].scores[i]);
-  players.forEach((p, i) => p.score += newScores[i]);
-
-  history[index] = {
-    scores: newScores,
-    bid: parseInt(newBid),
-    bidder: newBidderIndex
-  };
-
-  updateHistory();
-  renderPlayers();
-}
-
+  </script>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -195,192 +197,5 @@
       <div class="points-grid" id="pointsGrid"></div>
     </div>
   </div>
-
-  <script>
-    let players = [];
-    let history = [];
-    let currentBid = 0;
-    let currentBidderIndex = 0;
-    let roundScores = [];
-    let selectedBtn = null;
-
-    document.getElementById('numPlayers').addEventListener('change', () => {
-      const container = document.getElementById('playerNames');
-      container.innerHTML = '';
-      const n = parseInt(document.getElementById('numPlayers').value);
-      for (let i = 0; i < n; i++) {
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.placeholder = `Gracz ${i + 1}`;
-        input.id = `playerName${i}`;
-        container.appendChild(input);
-      }
-    });
-    document.getElementById('numPlayers').dispatchEvent(new Event('change'));
-
-    function prepareAuction() {
-      players = [];
-      const n = parseInt(document.getElementById('numPlayers').value);
-      const bidSelect = document.getElementById('bidPlayerSelect');
-      const scoreSelect = document.getElementById('bidValue');
-      bidSelect.innerHTML = '';
-      scoreSelect.innerHTML = '';
-
-      const defaultOption = document.createElement('option');
-      defaultOption.value = '';
-      defaultOption.textContent = '-- wybierz gracza --';
-      defaultOption.disabled = true;
-      defaultOption.selected = true;
-      bidSelect.appendChild(defaultOption);
-
-      for (let i = 0; i < n; i++) {
-        let name = document.getElementById(`playerName${i}`).value.trim();
-        if (!name) name = `Gracz ${i + 1}`;
-        players.push({ name, score: 0 });
-        const option = document.createElement('option');
-        option.value = i;
-        option.textContent = name;
-        bidSelect.appendChild(option);
-      }
-
-      for (let i = 100; i <= 230; i += 10) {
-        const option = document.createElement('option');
-        option.value = i;
-        option.textContent = i;
-        scoreSelect.appendChild(option);
-      }
-
-      document.getElementById('startScreen').style.display = 'none';
-      document.getElementById('auctionScreen').style.display = 'block';
-
-      document.getElementById('bidPlayerSelect').value = ''; // reset wyboru licytującego
-    }
-
-    function startGame() {
-      const bidPlayer = document.getElementById('bidPlayerSelect').value;
-      if (bidPlayer === '') {
-        alert('Proszę wybrać gracza, który wygrał licytację.');
-        return;
-      }
-      currentBid = parseInt(document.getElementById('bidValue').value);
-      currentBidderIndex = parseInt(document.getElementById('bidPlayerSelect').value);
-      renderPlayers();
-      renderHistoryHeader();
-      document.getElementById('auctionScreen').style.display = 'none';
-      document.getElementById('gameScreen').style.display = 'block';
-    }
-
-    function renderPlayers() {
-      const scoreBoard = document.getElementById('scoreBoard');
-      const roundInputs = document.getElementById('roundInputs');
-      scoreBoard.innerHTML = '';
-      roundInputs.innerHTML = '';
-      roundScores = new Array(players.length).fill(0);
-      players.forEach((player, index) => {
-        scoreBoard.innerHTML += `<div class='player-row'><strong>${player.name}</strong>: ${player.score} pkt</div>`;
-        const btn = document.createElement('button');
-        btn.className = 'player-btn';
-        btn.textContent = `${player.name}: 0 pkt`;
-        btn.onclick = () => showPointModal(index, btn);
-        roundInputs.appendChild(btn);
-      });
-    }
-
-    function showPointModal(index, btn) {
-      selectedBtn = btn;
-      const modal = document.getElementById('pointModal');
-      const grid = document.getElementById('pointsGrid');
-      const nameDisplay = document.getElementById('modalPlayerName');
-      nameDisplay.textContent = `Wynik: ${players[index].name}`;
-      grid.innerHTML = '';
-
-      for (let i = 0; i <= 400; i += 10) {
-        const ptBtn = document.createElement('button');
-        ptBtn.textContent = i;
-        ptBtn.onclick = () => {
-          roundScores[index] = i;
-          btn.textContent = `${players[index].name}: ${i} pkt`;
-          modal.style.display = 'none';
-        };
-        grid.appendChild(ptBtn);
-      }
-
-      modal.style.display = 'flex';
-    }
-
-    function addRound() {
-      if (roundScores.every(score => score === 0)) {
-        alert("Przynajmniej jeden gracz musi mieć więcej niż 0 punktów, aby zapisać rundę.");
-        return;
-      }
-      if (roundScores[currentBidderIndex] < currentBid) {
-        alert(`${players[currentBidderIndex].name} NIE zrealizował licytacji! Traci ${currentBid} pkt.`);
-        roundScores[currentBidderIndex] = -currentBid;
-      }
-      players.forEach((p, i) => p.score += roundScores[i]);
-      history.push({ scores: [...roundScores], bid: currentBid, bidder: currentBidderIndex });
-      updateHistory();
-      renderPlayers();
-
-      const btn = document.createElement('button');
-      btn.textContent = 'Rozpocznij kolejną licytację';
-      btn.style.marginTop = '12px';
-      btn.onclick = () => {
-        prepareAuction();
-      };
-      document.getElementById('roundInputs').appendChild(btn);
-
-      const undoBtn = document.createElement('button');
-      undoBtn.textContent = 'Cofnij ostatnią rundę';
-      undoBtn.style.marginTop = '12px';
-      undoBtn.onclick = undoLastRound;
-      document.getElementById('roundInputs').appendChild(undoBtn);
-    }
-
-    function renderHistoryHeader() {
-      const row = document.getElementById('historyHeader');
-      row.innerHTML = '<th>Runda</th><th>Licytacja</th>' + players.map(p => `<th>${p.name}</th>`).join('');
-    }
-
-    function updateHistory() {
-      const list = document.getElementById('historyList');
-      list.innerHTML = '';
-      if (history.length === 0) {
-        const row = document.createElement('tr');
-        row.innerHTML = `<td colspan="${2 + players.length}">Brak rund</td>`;
-        list.appendChild(row);
-        return;
-      }
-      history.forEach((round, i) => {
-        const r = document.createElement('tr');
-        r.style.cursor = 'pointer';
-        r.onclick = () => editRound(i);
-        r.innerHTML = `<td>${i + 1}</td><td>${round.bid} (${players[round.bidder].name})</td>` +
-          round.scores.map(s => `<td>${s}</td>`).join('');
-        list.appendChild(r);
-      });
-    }
-  function checkForWinner() {
-  players.forEach(p => {
-    if (p.score >= 1000) {
-      const confetti = document.createElement('div');
-      confetti.innerHTML = `🎉 ${p.name} wygrał grę z wynikiem ${p.score} punktów! 🎉`;
-      confetti.style.position = 'fixed';
-      confetti.style.top = '50%';
-      confetti.style.left = '50%';
-      confetti.style.transform = 'translate(-50%, -50%)';
-      confetti.style.fontSize = '2rem';
-      confetti.style.background = '#fff';
-      confetti.style.padding = '20px';
-      confetti.style.borderRadius = '12px';
-      confetti.style.boxShadow = '0 0 10px rgba(0,0,0,0.3)';
-      confetti.style.zIndex = '2000';
-      document.body.appendChild(confetti);
-
-      setTimeout(() => confetti.remove(), 5000);
-    }
-  });
-}
-</script>
 </body>
 </html>
