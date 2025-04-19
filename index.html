@@ -11,6 +11,8 @@
     }
 
     let players = [];
+    let currentBid = 0;
+    let currentBidderIndex = 0;
 
     function prepareAuction() {
       const n = parseInt(document.getElementById('numPlayers').value);
@@ -48,6 +50,32 @@
 
       document.getElementById('startScreen').style.display = 'none';
       document.getElementById('auctionScreen').style.display = 'block';
+    }
+
+    function startGame() {
+      const bidPlayer = document.getElementById('bidPlayerSelect').value;
+      if (bidPlayer === '') {
+        alert('Proszę wybrać gracza, który wygrał licytację.');
+        return;
+      }
+      currentBid = parseInt(document.getElementById('bidValue').value);
+      currentBidderIndex = parseInt(bidPlayer);
+      document.getElementById('auctionScreen').style.display = 'none';
+      document.getElementById('gameScreen').style.display = 'block';
+
+      const scoreBoard = document.getElementById('scoreBoard');
+      const roundInputs = document.getElementById('roundInputs');
+      scoreBoard.innerHTML = '';
+      roundInputs.innerHTML = '';
+
+      players.forEach((player, index) => {
+        scoreBoard.innerHTML += `<div class='player-row'><strong>${player.name}</strong>: ${player.score} pkt</div>`;
+        const btn = document.createElement('button');
+        btn.className = 'player-btn';
+        btn.textContent = `${player.name}: 0 pkt`;
+        btn.onclick = () => alert(`Tu wpiszesz wynik dla ${player.name}`);
+        roundInputs.appendChild(btn);
+      });
     }
   </script>
   <style>
