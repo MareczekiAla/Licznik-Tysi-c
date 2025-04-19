@@ -25,30 +25,38 @@
         nameInput.type = 'text';
         nameInput.placeholder = `Gracz ${i + 1}`;
         nameInput.id = `playerName${i}`;
+        nameInput.style.marginBottom = '10px';
         namesContainer.appendChild(nameInput);
       }
 
-      const bidSelect = document.getElementById('bidPlayerSelect');
-      bidSelect.innerHTML = '<option disabled selected value>-- wybierz gracza --</option>';
-      for (let i = 0; i < n; i++) {
-        const name = document.getElementById(`playerName${i}`)?.value || `Gracz ${i + 1}`;
-        const option = document.createElement('option');
-        option.value = i;
-        option.text = name;
-        bidSelect.appendChild(option);
-        players.push({ name: name, score: 0 });
-      }
+      const startButton = document.createElement('button');
+      startButton.textContent = 'Potwierdź imiona';
+      startButton.onclick = () => {
+        const bidSelect = document.getElementById('bidPlayerSelect');
+        bidSelect.innerHTML = '<option disabled selected value>-- wybierz gracza --</option>';
+        for (let i = 0; i < n; i++) {
+          const name = document.getElementById(`playerName${i}`).value.trim() || `Gracz ${i + 1}`;
+          const option = document.createElement('option');
+          option.value = i;
+          option.text = name;
+          bidSelect.appendChild(option);
+          players.push({ name: name, score: 0 });
+        }
 
-      const bidValue = document.getElementById('bidValue');
-      bidValue.innerHTML = '';
-      for (let i = 100; i <= 230; i += 10) {
-        const option = document.createElement('option');
-        option.value = i;
-        option.text = i;
-        bidValue.appendChild(option);
-      }
+        const bidValue = document.getElementById('bidValue');
+        bidValue.innerHTML = '';
+        for (let i = 100; i <= 230; i += 10) {
+          const option = document.createElement('option');
+          option.value = i;
+          option.text = i;
+          bidValue.appendChild(option);
+        }
 
-      document.getElementById('startScreen').style.display = 'none';
+        document.getElementById('startScreen').style.display = 'none';
+        document.getElementById('auctionScreen').style.display = 'block';
+      };
+
+      namesContainer.appendChild(startButton);
       document.getElementById('auctionScreen').style.display = 'block';
     }
 
