@@ -17,6 +17,8 @@
       });
       updateHistory();
       renderPlayers();
+
+      checkForWinner();
     }
   function editRound(index) {
   const round = history[index];
@@ -358,6 +360,27 @@
         list.appendChild(r);
       });
     }
-  </script>
+  function checkForWinner() {
+  players.forEach(p => {
+    if (p.score >= 1000) {
+      const confetti = document.createElement('div');
+      confetti.innerHTML = `🎉 ${p.name} wygrał grę z wynikiem ${p.score} punktów! 🎉`;
+      confetti.style.position = 'fixed';
+      confetti.style.top = '50%';
+      confetti.style.left = '50%';
+      confetti.style.transform = 'translate(-50%, -50%)';
+      confetti.style.fontSize = '2rem';
+      confetti.style.background = '#fff';
+      confetti.style.padding = '20px';
+      confetti.style.borderRadius = '12px';
+      confetti.style.boxShadow = '0 0 10px rgba(0,0,0,0.3)';
+      confetti.style.zIndex = '2000';
+      document.body.appendChild(confetti);
+
+      setTimeout(() => confetti.remove(), 5000);
+    }
+  });
+}
+</script>
 </body>
 </html>
